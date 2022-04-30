@@ -1,0 +1,18 @@
+---
+# defaults file for logrotate
+- name: syntax for logrotation
+  logrotate_conf_dir: "/etc/logrotate.d/"
+  logrotate_distribution_options:
+    - name: nginx
+      log_dir: '/var/log/docker/container/'
+      log_extension: 'log'
+      options:
+        - rotate 7
+        - daily
+        - size 100M
+        - rotate 4
+        - dateext
+        - missingok
+        - compress
+        - create 0644 nginx nginx
+
