@@ -1,0 +1,15 @@
+---
+- name: task file for nginx container
+  hosts: docker
+  become: yes
+  tasks:
+  - name: create NGINX container
+    docker_container:
+      name: nginx
+      image: nginx:latest
+      state: started
+      recreate: yes
+      published_ports:
+        - 8080:8080
+
+
