@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    redeploy: {{ randAlphaNum 5 | quote }}
+  labels:
+    case-project: {{ $.Values.Project }}
+    case-application: {{ $.Values.Name }}
+    case-gitcommitid: "{{ $.Values.imageTag }}"
+    case-environment: {{ $.Values.Environment }}
+{{ if $.Values.gitref }} 
+    case-gitref: {{ $.Values.gitref }}
+    case-gitname: {{ regexReplaceAll "\\W+" $.Values.gitname "-" }} 
+{{ end }} 
+    app: {{ $.Values.Name }}
+  name: {{ $.Values.Name }}
+spec:
+  progressDeadlineSeconds: 60
+  replicas: {{ $.Values.Replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: {{ $.Values.Name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ $.Values.Name }}
+        case-project: {{ $.Values.Project }}
+        case-application: {{ $.Values.Name }}
+        case-gitcommitid: "{{ $.Values.imageTag }}" 
+        case-environment: {{ $.Values.Environment }}
+{{- if $.Values.gitref }}
+        case-gitref: {{ $.Values.gitref }}
+        case-gitname: {{ regexReplaceAll "\\W+" $.Values.gitname "-" }} 
+{{ end }} 
+    spec:
+      containers:
+      - image: "casestudy.com/case-{{ $.Values.Name }}-{{ $.Values.Environment }}:{{ $.Values.imageTag }}"
+{{- if $.Values.EnvVars }}
+        env: 
+  {{- range $key, $value := $.Values.EnvVars }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+{{- if $.Values.HealthCheck }}
+        livenessProbe:
+          httpGet:
+            path: {{ $.Values.HealthCheck | quote }} 
+            port: {{ $.Values.Port }}
+            httpHeaders:
+            - name: Kubernetes-Health-Check
+              value: "true"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+{{- end }}
+        name: nginx-{{ $.Values.Name }}
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            {{- if $.Values.CPUReq }}
+            cpu: {{ $.Values.CPUReq }}
+            {{- end }}
+            {{- if $.Values.MEMReq }}
+            memory: {{ $.Values.MEMReq }}
+            {{- end }}
+          limits:
+            {{- if $.Values.CPULim }}
+            cpu: {{ $.Values.CPULim }}
+            {{- end }}
+            {{- if $.Values.MEMLim }}
+            memory: {{ $.Values.MEMLim }}
+            {{- end }}
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        beta.kubernetes.io/os: linux
+      restartPolicy: Always
+      serviceAccountName: {{ $.Values.Name }}-sa
+      schedulerName: default-scheduler
