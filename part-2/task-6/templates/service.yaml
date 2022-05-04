@@ -4,6 +4,7 @@ metadata:
   labels:
     app: {{ $.Values.Name }}-case-study-svc
   name: {{ $.Values.Name }}-case-study-svc
+  type: NodePort
 spec:
   ports:
   - name: http
